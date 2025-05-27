@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Products - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>Manage Products</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('admin_add_product') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Product
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="text-white fw-bold">Product ID</th>
+                            <th class="text-white fw-bold">Image</th>
+                            <th class="text-white fw-bold">Name</th>
+                            <th class="text-white fw-bold">Category</th>
+                            <th class="text-white fw-bold">Price</th>
+                            <th class="text-white fw-bold">Stock</th>
+                            <th class="text-white fw-bold">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <td>#{{ product.id }}</td>
+                            <td>
+                                <img src="{{ product.image_url }}" alt="{{ product.name }}" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">
+                            </td>
+                            <td>{{ product.name }}</td>
+                            <td>{{ product.category.name }}</td>
+                            <td>${{ "%.2f"|format(product.price) }}</td>
+                            <td>{{ product.stock }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('admin_edit_product', product_id=product.id) }}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-danger delete-product-btn" 
+                                            data-product-id="{{ product.id }}">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Product Modal -->
+<div class="modal fade" id="deleteProductModal" tabindex="-1" aria-labelledby="deleteProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteProductModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this product?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteProductForm" method="POST" action="">
+                    <button type="submit" class="btn btn-danger">Delete Product</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.table thead {
+    background-color: #212529 !important;
+}
+
+.table-dark th {
+    background-color: #212529 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
+    padding: 15px !important;
+    border-bottom: 2px solid #dee2e6 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table tbody td {
+    vertical-align: middle;
+    padding: 12px;
+    border-bottom: 1px solid #dee2e6;
+    color: #000000 !important;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.btn-group {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.btn-group .btn {
+    position: relative;
+    z-index: 1;
+}
+
+.btn-group .btn:hover {
+    z-index: 2;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+    color: white;
+}
+
+.btn-primary i {
+    margin-right: 0.5rem;
+}
+
+.btn-info {
+    background-color: #0dcaf0;
+    border-color: #0dcaf0;
+    color: #000;
+}
+
+.btn-info:hover {
+    background-color: #31d2f2;
+    border-color: #25cff2;
+    color: #000;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #bb2d3b;
+    border-color: #b02a37;
+    color: white;
+}
+
+.text-white {
+    color: #ffffff !important;
+}
+
+.fw-bold {
+    font-weight: 700 !important;
+}
+
+.img-thumbnail {
+    border: 1px solid #dee2e6;
+    padding: 0.25rem;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1050;
+}
+
+.modal-dialog {
+    position: relative;
+    width: auto;
+    margin: 1.75rem auto;
+    max-width: 500px;
+    z-index: 1051;
+}
+
+.modal-content {
+    position: relative;
+    background-color: #fff;
+    border-radius: 0.3rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    z-index: 1052;
+}
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1040;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000;
+}
+
+.modal-backdrop.show {
+    opacity: 0.5;
+}
+
+.modal.show {
+    display: block;
+}
+
+.modal-header {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+}
+
+.modal-body {
+    padding: 1rem;
+}
+
+.modal-footer {
+    padding: 1rem;
+    border-top: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+}
+
+.btn-close {
+    padding: 1rem;
+    margin: -1rem -1rem -1rem auto;
+}
+
+#deleteProductForm {
+    display: inline;
+}
+
+/* Ensure buttons are clickable */
+.btn {
+    position: relative;
+    z-index: 1053;
+}
+
+/* Ensure modal is above backdrop */
+.modal-dialog-centered {
+    display: flex;
+    align-items: center;
+    min-height: calc(100% - 3.5rem);
+}
+
+.text-end {
+    text-align: right;
+}
+</style>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize modal
+    const deleteProductModal = new bootstrap.Modal(document.getElementById('deleteProductModal'), {
+        backdrop: 'static',
+        keyboard: false
+    });
+    
+    // Delete Product Form
+    const deleteProductForm = document.getElementById('deleteProductForm');
+    
+    // Handle delete button clicks
+    document.querySelectorAll('.delete-product-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const productId = this.dataset.productId;
+            
+            // Update form action URL
+            deleteProductForm.action = `/admin/product/${productId}/delete`;
+            
+            // Show the modal
+            deleteProductModal.show();
+        });
+    });
+    
+    // Handle delete product form submission
+    deleteProductForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitButton = this.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...';
+        
+        fetch(this.action, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                throw new Error('Network response was not ok');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Delete Product';
+            alert('An error occurred while deleting the product. Please try again.');
+        });
+    });
+});
+</script>
+{% endblock %}
+
+{% endblock %} 

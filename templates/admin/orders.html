@@ -1,0 +1,432 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Orders - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2>Manage Orders</h2>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="text-white fw-bold">Order ID</th>
+                            <th class="text-white fw-bold">Customer</th>
+                            <th class="text-white fw-bold">Date</th>
+                            <th class="text-white fw-bold">Total</th>
+                            <th class="text-white fw-bold">Status</th>
+                            <th class="text-white fw-bold">Tracking</th>
+                            <th class="text-white fw-bold">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>#{{ order.id }}</td>
+                            <td>{{ order.user.username }}</td>
+                            <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>${{ "%.2f"|format(order.total_amount) }}</td>
+                            <td>
+                                <span class="badge {% if order.status == 'delivered' %}bg-success{% elif order.status == 'shipped' %}bg-primary{% elif order.status == 'cancelled' %}bg-danger{% else %}bg-warning{% endif %}">
+                                    {{ order.status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if order.tracking_number %}
+                                <span class="text-muted">{{ order.tracking_number }}</span>
+                                {% else %}
+                                <span class="text-muted">Not available</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('admin_order_details', order_id=order.id) }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-info update-status-btn" 
+                                            data-order-id="{{ order.id }}"
+                                            data-current-status="{{ order.status }}">
+                                        <i class="fas fa-edit"></i> Update
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-danger delete-order-btn" 
+                                            data-order-id="{{ order.id }}">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update Status Modal -->
+<div class="modal fade" id="updateStatusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Order Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="updateStatusForm" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Location</label>
+                        <input type="text" class="form-control" id="location" name="location" placeholder="Current location">
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="2" placeholder="Status update description"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Order Modal -->
+<div class="modal fade" id="deleteOrderModal" tabindex="-1" aria-labelledby="deleteOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteOrderModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this order?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteOrderForm" method="POST" action="">
+                    <button type="submit" class="btn btn-danger">Delete Order</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.table thead {
+    background-color: #212529 !important;
+}
+
+.table-dark th {
+    background-color: #212529 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
+    padding: 15px !important;
+    border-bottom: 2px solid #dee2e6 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table tbody td {
+    vertical-align: middle;
+    padding: 12px;
+    border-bottom: 1px solid #dee2e6;
+    color: #000000 !important;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.badge {
+    font-weight: 600;
+    padding: 6px 10px;
+}
+
+.btn-group {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.btn-group .btn {
+    position: relative;
+    z-index: 1;
+}
+
+.btn-group .btn:hover {
+    z-index: 2;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+    color: white;
+}
+
+.btn-info {
+    background-color: #0dcaf0;
+    border-color: #0dcaf0;
+    color: #000;
+}
+
+.btn-info:hover {
+    background-color: #31d2f2;
+    border-color: #25cff2;
+    color: #000;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #bb2d3b;
+    border-color: #b02a37;
+    color: white;
+}
+
+.text-white {
+    color: #ffffff !important;
+}
+
+.fw-bold {
+    font-weight: 700 !important;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1050;
+}
+
+.modal-dialog {
+    position: relative;
+    width: auto;
+    margin: 1.75rem auto;
+    max-width: 500px;
+    z-index: 1051;
+}
+
+.modal-content {
+    position: relative;
+    background-color: #fff;
+    border-radius: 0.3rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    z-index: 1052;
+}
+
+.modal-header {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+}
+
+.modal-body {
+    padding: 1rem;
+}
+
+.modal-footer {
+    padding: 1rem;
+    border-top: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.btn-close {
+    padding: 1rem;
+    margin: -1rem -1rem -1rem auto;
+}
+
+#deleteOrderForm {
+    display: inline;
+}
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1040;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000;
+}
+
+.modal-backdrop.show {
+    opacity: 0.5;
+}
+
+.modal.show {
+    display: block;
+}
+
+/* Ensure buttons are clickable */
+.btn {
+    position: relative;
+    z-index: 1053;
+}
+
+/* Ensure modal is above backdrop */
+.modal-dialog-centered {
+    display: flex;
+    align-items: center;
+    min-height: calc(100% - 3.5rem);
+}
+</style>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize modals
+    const updateStatusModal = new bootstrap.Modal(document.getElementById('updateStatusModal'), {
+        backdrop: 'static',
+        keyboard: false
+    });
+    
+    const deleteOrderModal = new bootstrap.Modal(document.getElementById('deleteOrderModal'), {
+        backdrop: 'static',
+        keyboard: false
+    });
+    
+    // Update Status Form
+    const updateStatusForm = document.getElementById('updateStatusForm');
+    const statusSelect = document.getElementById('status');
+    
+    // Delete Order Form
+    const deleteOrderForm = document.getElementById('deleteOrderForm');
+    
+    // Handle update status button clicks
+    document.querySelectorAll('.update-status-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const orderId = this.dataset.orderId;
+            const currentStatus = this.dataset.currentStatus;
+            
+            // Set the current status in the select
+            statusSelect.value = currentStatus;
+            
+            // Update form action URL
+            updateStatusForm.action = `/admin/order/${orderId}/update-status`;
+            
+            // Show the modal
+            updateStatusModal.show();
+        });
+    });
+    
+    // Handle delete button clicks
+    document.querySelectorAll('.delete-order-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const orderId = this.dataset.orderId;
+            
+            // Update form action URL
+            deleteOrderForm.action = `/admin/order/${orderId}/delete`;
+            
+            // Show the modal
+            deleteOrderModal.show();
+        });
+    });
+    
+    // Handle update status form submission
+    updateStatusForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitButton = this.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...';
+        
+        const formData = new FormData(this);
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                throw new Error('Network response was not ok');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Update Status';
+            alert('An error occurred while updating the status. Please try again.');
+        });
+    });
+    
+    // Handle delete order form submission
+    deleteOrderForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitButton = this.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...';
+        
+        fetch(this.action, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                throw new Error('Network response was not ok');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Delete Order';
+            alert('An error occurred while deleting the order. Please try again.');
+        });
+    });
+});
+</script>
+{% endblock %}
+
+{% endblock %} 
